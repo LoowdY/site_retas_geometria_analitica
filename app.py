@@ -2,7 +2,8 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
-import sympy as sp
+from sympy import sympify, Symbol, Eq
+import re
 
 # Configuração inicial da página
 st.set_page_config(page_title="Geometria Analítica: Retas e Planos", layout="centered")
@@ -164,6 +165,28 @@ def retas_3d():
     st.plotly_chart(fig)
 
 
+def validar_expressao(resposta_usuario, resposta_correta):
+    """
+    Valida a resposta do usuário comparando-a com a resposta correta,
+    permitindo variações na representação (por exemplo, 3x ou 3*x).
+    """
+    resposta_usuario = resposta_usuario.replace(" ", "").lower()
+    resposta_correta = resposta_correta.replace(" ", "").lower()
+
+    resposta_usuario = re.sub(r'(\d)([a-z])', r'\1*\2', resposta_usuario)
+    resposta_correta = re.sub(r'(\d)([a-z])', r'\1*\2', resposta_correta)
+
+    try:
+        expr_usuario = sympify(resposta_usuario)
+        expr_correta = sympify(resposta_correta)
+    except:
+        return False
+
+    x, y, z = Symbol('x'), Symbol('y'), Symbol('z')
+    diff = expr_usuario - expr_correta
+    return diff.equals(0)
+
+
 def exercicios():
     st.title('Exercícios Interativos')
 
@@ -174,7 +197,9 @@ def exercicios():
             "Equação da Reta",
             "Interseção de Retas",
             "Distância Ponto-Reta",
-            "Ângulo entre Retas"
+            "Ângulo entre Retas",
+            "Paralelismo e Perpendicularidade",
+            "Ponto Médio"
         ])
 
         if exercicio == "Equação da Reta":
@@ -182,24 +207,17 @@ def exercicios():
             st.write(
                 "Dada a reta que passa pelos pontos (1, 2) e (4, 8), determine a equação da reta na forma y = ax + b.")
 
-            resposta_a = st.text_input('Digite o valor de a:')
-            resposta_b = st.text_input('Digite o valor de b:')
+            resposta = st.text_input('Digite a equação da reta na forma y = ax + b:')
 
             if st.button('Verificar Resposta'):
-                a_correto = 2
-                b_correto = 0
-                if resposta_a and resposta_b:
-                    try:
-                        a_usuario = float(resposta_a)
-                        b_usuario = float(resposta_b)
-                        if abs(a_usuario - a_correto) < 0.01 and abs(b_usuario - b_correto) < 0.01:
-                            st.success("Correto! A equação da reta é y = 2x + 0 ou simplesmente y = 2x.")
-                        else:
-                            st.error("Incorreto. Tente novamente.")
-                    except ValueError:
-                        st.error("Por favor, insira valores numéricos válidos.")
+                if resposta:
+                    resposta_correta = "y = 2*x + 0"
+                    if validar_expressao(resposta, resposta_correta):
+                        st.success("Correto! A equação da reta é y = 2x + 0 ou simplesmente y = 2x.")
+                    else:
+                        st.error("Incorreto. Tente novamente.")
                 else:
-                    st.warning("Por favor, preencha ambos os campos.")
+                    st.warning("Por favor, preencha o campo da resposta.")
 
             if st.button('Ver Solução'):
                 st.write("Solução:")
@@ -222,15 +240,10 @@ def exercicios():
 
             if st.button('Verificar Resposta'):
                 if resposta_x and resposta_y:
-                    try:
-                        x = float(resposta_x)
-                        y = float(resposta_y)
-                        if abs(x - 2) < 0.01 and abs(y - 5) < 0.01:
-                            st.success("Correto! O ponto de interseção é (2, 5).")
-                        else:
-                            st.error("Incorreto. Tente novamente.")
-                    except ValueError:
-                        st.error("Por favor, insira valores numéricos válidos.")
+                    if validar_expressao(resposta_x, "2") and validar_expressao(resposta_y, "5"):
+                        st.success("Correto! O ponto de interseção é (2, 5).")
+                    else:
+                        st.error("Incorreto. Tente novamente.")
                 else:
                     st.warning("Por favor, preencha ambos os campos.")
 
@@ -254,14 +267,10 @@ def exercicios():
 
             if st.button('Verificar Resposta'):
                 if resposta:
-                    try:
-                        d = float(resposta)
-                        if abs(d - 1.4) < 0.1:
-                            st.success("Correto! A distância é aproximadamente 1,4 unidades.")
-                        else:
-                            st.error("Incorreto. Tente novamente.")
-                    except ValueError:
-                        st.error("Por favor, insira um valor numérico válido.")
+                    if validar_expressao(resposta, "1.4"):
+                        st.success("Correto! A distância é aproximadamente 1,4 unidades.")
+                    else:
+                        st.error("Incorreto. Tente novamente.")
                 else:
                     st.warning("Por favor, preencha o campo da resposta.")
 
@@ -284,14 +293,10 @@ def exercicios():
 
             if st.button('Verificar Resposta'):
                 if resposta:
-                    try:
-                        angulo = float(resposta)
-                        if abs(angulo - 116.57) < 1:
-                            st.success("Correto! O ângulo é aproximadamente 116,57°.")
-                        else:
-                            st.error("Incorreto. Tente novamente.")
-                    except ValueError:
-                        st.error("Por favor, insira um valor numérico válido.")
+                    if validar_expressao(resposta, "116.57"):
+                        st.success("Correto! O ângulo é aproximadamente 116,57°.")
+                    else:
+                        st.error("Incorreto. Tente novamente.")
                 else:
                     st.warning("Por favor, preencha o campo da resposta.")
 
@@ -307,11 +312,73 @@ def exercicios():
                 \end{aligned}
                 ''')
 
+        elif exercicio == "Paralelismo e Perpendicularidade":
+            st.subheader('Exercício: Paralelismo e Perpendicularidade')
+            st.write(
+                "Dada a reta r: y = 2x + 3, determine a equação de uma reta s paralela a r e que passa pelo ponto P(1, -1).")
+
+            resposta = st.text_input('Digite a equação da reta s na forma y = ax + b:')
+
+            if st.button('Verificar Resposta'):
+                if resposta:
+                    resposta_correta = "y = 2*x - 3"
+                    if validar_expressao(resposta, resposta_correta):
+                        st.success("Correto! A equação da reta s é y = 2x - 3.")
+                    else:
+                        st.error("Incorreto. Tente novamente.")
+                else:
+                    st.warning("Por favor, preencha o campo da resposta.")
+
+            if st.button('Ver Solução'):
+                st.write("Solução:")
+                st.latex(r'''
+                \begin{aligned}
+                1) \text{ Retas paralelas têm o mesmo coeficiente angular } \\
+                2) \text{ A reta s terá a forma } y &= 2x + b \\
+                3) \text{ Usamos o ponto P(1, -1) para encontrar b: } \\
+                -1 &= 2(1) + b \\
+                -1 &= 2 + b \\
+                b &= -3 \\
+                4) \text{ Equação final: } y &= 2x - 3
+                \end{aligned}
+                ''')
+
+        elif exercicio == "Ponto Médio":
+            st.subheader('Exercício: Ponto Médio')
+            st.write("Encontre o ponto médio do segmento de reta que liga os pontos A(2, 3) e B(6, 7).")
+
+            resposta_x = st.text_input('Digite a coordenada x do ponto médio:')
+            resposta_y = st.text_input('Digite a coordenada y do ponto médio:')
+
+            if st.button('Verificar Resposta'):
+                if resposta_x and resposta_y:
+                    if validar_expressao(resposta_x, "4") and validar_expressao(resposta_y, "5"):
+                        st.success("Correto! O ponto médio é (4, 5).")
+                    else:
+                        st.error("Incorreto. Tente novamente.")
+                else:
+                    st.warning("Por favor, preencha ambos os campos.")
+
+            if st.button('Ver Solução'):
+                st.write("Solução:")
+                st.latex(r'''
+                \begin{aligned}
+                1) \text{ Fórmula do ponto médio: } \\
+                x_m &= \frac{x_1 + x_2}{2}, \quad y_m = \frac{y_1 + y_2}{2} \\
+                2) \text{ Substituindo os valores: } \\
+                x_m &= \frac{2 + 6}{2} = \frac{8}{2} = 4 \\
+                y_m &= \frac{3 + 7}{2} = \frac{10}{2} = 5 \\
+                3) \text{ O ponto médio é } (4, 5)
+                \end{aligned}
+                ''')
+
     elif materia == "Retas 3D":
         exercicio = st.selectbox("Escolha o exercício", [
             "Equação Paramétrica da Reta",
             "Interseção de Retas no Espaço",
-            "Distância entre Retas Reversas"
+            "Distância entre Retas Reversas",
+            "Ângulo entre Retas no Espaço",
+            "Projeção de um Ponto sobre uma Reta"
         ])
 
         if exercicio == "Equação Paramétrica da Reta":
@@ -324,12 +391,9 @@ def exercicios():
 
             if st.button('Verificar Resposta'):
                 if resposta_x and resposta_y and resposta_z:
-                    x_correto = "1 + 3t"
-                    y_correto = "2 + 4t"
-                    z_correto = "3 + 2t"
-                    if resposta_x.replace(" ", "") == x_correto.replace(" ", "") and \
-                            resposta_y.replace(" ", "") == y_correto.replace(" ", "") and \
-                            resposta_z.replace(" ", "") == z_correto.replace(" ", ""):
+                    if (validar_expressao(resposta_x, "1 + 3*t") and
+                            validar_expressao(resposta_y, "2 + 4*t") and
+                            validar_expressao(resposta_z, "3 + 2*t")):
                         st.success("Correto! A equação paramétrica da reta é x = 1 + 3t, y = 2 + 4t, z = 3 + 2t.")
                     else:
                         st.error("Incorreto. Tente novamente.")
@@ -349,27 +413,46 @@ def exercicios():
                 \end{aligned}
                 ''')
 
-        # Adicione mais exercícios para Retas 3D aqui
+        elif exercicio == "Interseção de Retas no Espaço":
+            st.subheader('Exercício: Interseção de Retas no Espaço')
+            st.write(
+                "Determine se as retas r: (x, y, z) = (1, 2, 3) + t(1, 1, 1) e s: (x, y, z) = (0, 1, 2) + u(2, 2, 2) se interceptam.")
 
-    elif materia == "Planos":
-        exercicio = st.selectbox("Escolha o exercício", [
-            "Equação Geral do Plano",
-            "Interseção de Três Planos",
-            "Distância Ponto-Plano"
-        ])
+            resposta = st.radio("As retas se interceptam?", ("Sim", "Não"))
 
-        if exercicio == "Equação Geral do Plano":
-            st.subheader('Exercício: Equação Geral do Plano')
-            st.write("Determine a equação geral do plano que passa pelos pontos A(1, 2, 3), B(2, 3, 1) e C(0, 1, 4).")
+            if st.button('Verificar Resposta'):
+                if resposta == "Sim":
+                    st.success("Correto! As retas se interceptam.")
+                else:
+                    st.error("Incorreto. As retas se interceptam.")
 
-            resposta = st.text_input('Digite a equação do plano na forma Ax + By + Cz + D = 0:')
+            if st.button('Ver Solução'):
+                st.write("Solução:")
+                st.latex(r'''
+                        \begin{aligned}
+                        1) \text{ Igualamos as equações paramétricas: } \\
+                        (1, 2, 3) + t(1, 1, 1) &= (0, 1, 2) + u(2, 2, 2) \\
+                        2) \text{ Obtemos um sistema de equações: } \\
+                        1 + t &= 2u \\
+                        2 + t &= 1 + 2u \\
+                        3 + t &= 2 + 2u \\
+                        3) \text{ Resolvendo o sistema: } \\
+                        t &= 1, \quad u = 1 \\
+                        4) \text{ Ponto de interseção: } (2, 3, 4)
+                        \end{aligned}
+                        ''')
+
+        elif exercicio == "Distância entre Retas Reversas":
+            st.subheader('Exercício: Distância entre Retas Reversas')
+            st.write(
+                "Calcule a distância entre as retas reversas r: (x, y, z) = (0, 0, 0) + t(1, 0, 0) e s: (x, y, z) = (0, 1, 1) + u(0, 1, 0).")
+
+            resposta = st.text_input('Digite a distância entre as retas:')
 
             if st.button('Verificar Resposta'):
                 if resposta:
-                    # A resposta correta é 3x - 5y + z - 4 = 0
-                    resposta_correta = "3x-5y+z-4=0"
-                    if resposta.replace(" ", "").lower() == resposta_correta:
-                        st.success("Correto! A equação do plano é 3x - 5y + z - 4 = 0.")
+                    if validar_expressao(resposta, "1"):
+                        st.success("Correto! A distância entre as retas é 1 unidade.")
                     else:
                         st.error("Incorreto. Tente novamente.")
                 else:
@@ -378,20 +461,235 @@ def exercicios():
             if st.button('Ver Solução'):
                 st.write("Solução:")
                 st.latex(r'''
-                \begin{aligned}
-                1) \text{ Vetores } \vec{AB} &= (1, 1, -2) \text{ e } \vec{AC} = (-1, -1, 1) \\
-                2) \text{ Normal } \vec{n} &= \vec{AB} \times \vec{AC} = (3, -5, 1) \\
-                3) \text{ Equação do plano: } &Ax + By + Cz + D = 0 \\
-                &3x - 5y + z + D = 0 \\
-                4) \text{ Usando A(1, 2, 3): } &3(1) - 5(2) + 3 + D = 0 \\
-                &3 - 10 + 3 + D = 0 \\
-                &D = 4 \\
-                5) \text{ Equação final: } &3x - 5y + z - 4 = 0
-                \end{aligned}
-                ''')
+                        \begin{aligned}
+                        1) \text{ Vetores diretores: } \vec{v} &= (1, 0, 0), \quad \vec{w} = (0, 1, 0) \\
+                        2) \text{ Vetor normal: } \vec{n} &= \vec{v} \times \vec{w} = (0, 0, 1) \\
+                        3) \text{ Vetor entre pontos: } \vec{PQ} &= (0, 1, 1) - (0, 0, 0) = (0, 1, 1) \\
+                        4) \text{ Fórmula da distância: } d &= \frac{|\vec{PQ} \cdot \vec{n}|}{|\vec{n}|} \\
+                        5) \text{ Calculando: } d &= \frac{|(0, 1, 1) \cdot (0, 0, 1)|}{|(0, 0, 1)|} = \frac{1}{1} = 1
+                        \end{aligned}
+                        ''')
 
-        # Adicione mais exercícios para Planos aqui
+        elif exercicio == "Ângulo entre Retas no Espaço":
+            st.subheader('Exercício: Ângulo entre Retas no Espaço')
+            st.write(
+                "Determine o ângulo entre as retas r: (x, y, z) = (1, 1, 1) + t(1, 2, 3) e s: (x, y, z) = (0, 0, 0) + u(2, 1, 2).")
 
+            resposta = st.text_input('Digite o ângulo em graus (arredondado para duas casas decimais):')
+
+            if st.button('Verificar Resposta'):
+                if resposta:
+                    if validar_expressao(resposta, "22.21"):
+                        st.success("Correto! O ângulo entre as retas é aproximadamente 22.21°.")
+                    else:
+                        st.error("Incorreto. Tente novamente.")
+                else:
+                    st.warning("Por favor, preencha o campo da resposta.")
+
+            if st.button('Ver Solução'):
+                st.write("Solução:")
+                st.latex(r'''
+                        \begin{aligned}
+                        1) \text{ Vetores diretores: } \vec{v} &= (1, 2, 3), \quad \vec{w} = (2, 1, 2) \\
+                        2) \text{ Fórmula do ângulo: } \cos \theta &= \frac{\vec{v} \cdot \vec{w}}{|\vec{v}||\vec{w}|} \\
+                        3) \text{ Calculando: } \cos \theta &= \frac{1(2) + 2(1) + 3(2)}{\sqrt{1^2 + 2^2 + 3^2}\sqrt{2^2 + 1^2 + 2^2}} \\
+                        &= \frac{10}{\sqrt{14}\sqrt{9}} \approx 0.9254 \\
+                        4) \text{ Ângulo: } \theta &= \arccos(0.9254) \approx 22.21°
+                        \end{aligned}
+                        ''')
+
+        elif exercicio == "Projeção de um Ponto sobre uma Reta":
+            st.subheader('Exercício: Projeção de um Ponto sobre uma Reta')
+            st.write("Encontre a projeção do ponto P(2, 3, 4) sobre a reta r: (x, y, z) = (1, 1, 1) + t(1, 1, 1).")
+
+            resposta_x = st.text_input('Digite a coordenada x do ponto projetado:')
+            resposta_y = st.text_input('Digite a coordenada y do ponto projetado:')
+            resposta_z = st.text_input('Digite a coordenada z do ponto projetado:')
+
+            if st.button('Verificar Resposta'):
+                if resposta_x and resposta_y and resposta_z:
+                    if (validar_expressao(resposta_x, "3") and
+                            validar_expressao(resposta_y, "3") and
+                            validar_expressao(resposta_z, "3")):
+                        st.success("Correto! O ponto projetado é (3, 3, 3).")
+                    else:
+                        st.error("Incorreto. Tente novamente.")
+                else:
+                    st.warning("Por favor, preencha todos os campos.")
+
+            if st.button('Ver Solução'):
+                st.write("Solução:")
+                st.latex(r'''
+                        \begin{aligned}
+                        1) \text{ Vetor diretor da reta: } \vec{v} &= (1, 1, 1) \\
+                        2) \text{ Vetor } \vec{AP} &= (2, 3, 4) - (1, 1, 1) = (1, 2, 3) \\
+                        3) \text{ Projeção escalar: } t &= \frac{\vec{AP} \cdot \vec{v}}{|\vec{v}|^2} = \frac{1 + 2 + 3}{1 + 1 + 1} = 2 \\
+                        4) \text{ Ponto projetado: } P' &= (1, 1, 1) + 2(1, 1, 1) = (3, 3, 3)
+                        \end{aligned}
+                        ''')
+
+        elif materia == "Planos":
+            exercicio = st.selectbox("Escolha o exercício", [
+                "Equação Geral do Plano",
+                "Interseção de Três Planos",
+                "Distância Ponto-Plano",
+                "Ângulo entre Planos",
+                "Plano Paralelo a um Plano Dado"
+            ])
+
+            if exercicio == "Equação Geral do Plano":
+                st.subheader('Exercício: Equação Geral do Plano')
+                st.write(
+                    "Determine a equação geral do plano que passa pelos pontos A(1, 2, 3), B(2, 3, 1) e C(0, 1, 4).")
+
+                resposta = st.text_input('Digite a equação do plano na forma Ax + By + Cz + D = 0:')
+
+                if st.button('Verificar Resposta'):
+                    if resposta:
+                        resposta_correta = "3*x - 5*y + z - 4 = 0"
+                        if validar_expressao(resposta, resposta_correta):
+                            st.success("Correto! A equação do plano é 3x - 5y + z - 4 = 0.")
+                        else:
+                            st.error("Incorreto. Tente novamente.")
+                    else:
+                        st.warning("Por favor, preencha o campo da resposta.")
+
+                if st.button('Ver Solução'):
+                    st.write("Solução:")
+                    st.latex(r'''
+                        \begin{aligned}
+                        1) \text{ Vetores } \vec{AB} &= (1, 1, -2) \text{ e } \vec{AC} = (-1, -1, 1) \\
+                        2) \text{ Normal } \vec{n} &= \vec{AB} \times \vec{AC} = (3, -5, 1) \\
+                        3) \text{ Equação do plano: } &Ax + By + Cz + D = 0 \\
+                        &3x - 5y + z + D = 0 \\
+                        4) \text{ Usando A(1, 2, 3): } &3(1) - 5(2) + 3 + D = 0 \\
+                        &3 - 10 + 3 + D = 0 \\
+                        &D = 4 \\
+                        5) \text{ Equação final: } &3x - 5y + z - 4 = 0
+                        \end{aligned}
+                        ''')
+
+            elif exercicio == "Interseção de Três Planos":
+                st.subheader('Exercício: Interseção de Três Planos')
+                st.write(
+                    "Encontre o ponto de interseção dos planos: P1: x + y + z = 1, P2: 2x - y + z = 2, P3: x + 2y - z = 3")
+
+                resposta_x = st.text_input('Digite a coordenada x do ponto de interseção:')
+                resposta_y = st.text_input('Digite a coordenada y do ponto de interseção:')
+                resposta_z = st.text_input('Digite a coordenada z do ponto de interseção:')
+
+                if st.button('Verificar Resposta'):
+                    if resposta_x and resposta_y and resposta_z:
+                        if (validar_expressao(resposta_x, "1") and
+                                validar_expressao(resposta_y, "1") and
+                                validar_expressao(resposta_z, "-1")):
+                            st.success("Correto! O ponto de interseção é (1, 1, -1).")
+                        else:
+                            st.error("Incorreto. Tente novamente.")
+                    else:
+                        st.warning("Por favor, preencha todos os campos.")
+
+                if st.button('Ver Solução'):
+                    st.write("Solução:")
+                    st.latex(r'''
+                        \begin{aligned}
+                        1) \text{ Sistema de equações: } \\
+                        x + y + z &= 1 \\
+                        2x - y + z &= 2 \\
+                        x + 2y - z &= 3 \\
+                        2) \text{ Resolvendo o sistema (por eliminação ou substituição): } \\
+                        x &= 1 \\
+                        y &= 1 \\
+                        z &= -1 \\
+                        3) \text{ O ponto de interseção é } (1, 1, -1)
+                        \end{aligned}
+                        ''')
+
+            elif exercicio == "Distância Ponto-Plano":
+                st.subheader('Exercício: Distância Ponto-Plano')
+                st.write("Calcule a distância do ponto P(1, 2, 3) ao plano 2x + 2y - z - 4 = 0.")
+
+                resposta = st.text_input('Digite a distância (arredondada para duas casas decimais):')
+
+                if st.button('Verificar Resposta'):
+                    if resposta:
+                        if validar_expressao(resposta, "1.63"):
+                            st.success("Correto! A distância é aproximadamente 1,63 unidades.")
+                        else:
+                            st.error("Incorreto. Tente novamente.")
+                    else:
+                        st.warning("Por favor, preencha o campo da resposta.")
+
+                if st.button('Ver Solução'):
+                    st.write("Solução:")
+                    st.latex(r'''
+                        \begin{aligned}
+                        1) \text{ Fórmula da distância: } d &= \frac{|Ax_0 + By_0 + Cz_0 + D|}{\sqrt{A^2 + B^2 + C^2}} \\
+                        2) \text{ Substituindo valores: } d &= \frac{|2(1) + 2(2) - 3 - 4|}{\sqrt{2^2 + 2^2 + (-1)^2}} \\
+                        3) \text{ Calculando: } d &= \frac{|2 + 4 - 3 - 4|}{\sqrt{4 + 4 + 1}} = \frac{|-1|}{\sqrt{9}} = \frac{1}{3} \\
+                        4) \text{ Resultado final: } d &\approx 1.63 \text{ unidades}
+                        \end{aligned}
+                        ''')
+
+            elif exercicio == "Ângulo entre Planos":
+                st.subheader('Exercício: Ângulo entre Planos')
+                st.write("Determine o ângulo entre os planos P1: 2x - y + 2z = 3 e P2: x + y + z = 1.")
+
+                resposta = st.text_input('Digite o ângulo em graus (arredondado para duas casas decimais):')
+
+                if st.button('Verificar Resposta'):
+                    if resposta:
+                        if validar_expressao(resposta, "60.40"):
+                            st.success("Correto! O ângulo entre os planos é aproximadamente 60,40°.")
+                        else:
+                            st.error("Incorreto. Tente novamente.")
+                    else:
+                        st.warning("Por favor, preencha o campo da resposta.")
+
+                if st.button('Ver Solução'):
+                    st.write("Solução:")
+                    st.latex(r'''
+                            \begin{aligned}
+                            1) \text{ Vetores normais: } \vec{n_1} &= (2, -1, 2), \quad \vec{n_2} = (1, 1, 1) \\
+                            2) \text{ Fórmula do ângulo: } \cos \theta &= \frac{|\vec{n_1} \cdot \vec{n_2}|}{|\vec{n_1}||\vec{n_2}|} \\
+                            3) \text{ Calculando: } \cos \theta &= \frac{|2(1) + (-1)(1) + 2(1)|}{\sqrt{2^2 + (-1)^2 + 2^2}\sqrt{1^2 + 1^2 + 1^2}} \\
+                            &= \frac{|3|}{\sqrt{9}\sqrt{3}} = \frac{3}{3\sqrt{3}} = \frac{1}{\sqrt{3}} \\
+                            4) \text{ Ângulo: } \theta &= \arccos(\frac{1}{\sqrt{3}}) \approx 60.40°
+                            \end{aligned}
+                            ''')
+
+            elif exercicio == "Plano Paralelo a um Plano Dado":
+                st.subheader('Exercício: Plano Paralelo a um Plano Dado')
+                st.write(
+                    "Encontre a equação do plano paralelo ao plano 2x - 3y + z = 5 e que passa pelo ponto P(1, 2, -1).")
+
+                resposta = st.text_input('Digite a equação do plano na forma Ax + By + Cz + D = 0:')
+
+                if st.button('Verificar Resposta'):
+                    if resposta:
+                        resposta_correta = "2*x - 3*y + z - 8 = 0"
+                        if validar_expressao(resposta, resposta_correta):
+                            st.success("Correto! A equação do plano paralelo é 2x - 3y + z - 8 = 0.")
+                        else:
+                            st.error("Incorreto. Tente novamente.")
+                    else:
+                        st.warning("Por favor, preencha o campo da resposta.")
+
+                if st.button('Ver Solução'):
+                    st.write("Solução:")
+                    st.latex(r'''
+                            \begin{aligned}
+                            1) \text{ Planos paralelos têm os mesmos coeficientes A, B e C } \\
+                            2) \text{ Equação geral: } 2x - 3y + z + D = 0 \\
+                            3) \text{ Usando o ponto P(1, 2, -1): } \\
+                            2(1) - 3(2) + (-1) + D &= 0 \\
+                            2 - 6 - 1 + D &= 0 \\
+                            D &= 5 \\
+                            4) \text{ Equação final: } 2x - 3y + z - 5 &= 0
+                            \end{aligned}
+                            ''')
+
+            st.write("Escolha um exercício e tente resolvê-lo. Use as dicas e soluções se precisar de ajuda!")
 
 def duvidas_comuns():
     st.title('Dúvidas Comuns')
@@ -614,4 +912,4 @@ if st.sidebar.button("Reportar um Bug / Dar Feedback"):
     st.sidebar.write("Por favor, envie um e-mail para: johnlopes360@gmail.com")
 
 # Informações sobre a versão do aplicativo
-st.sidebar.text("Versão do App: 1.0.0")
+st.sidebar.text("Versão do App: 1.0.2")
